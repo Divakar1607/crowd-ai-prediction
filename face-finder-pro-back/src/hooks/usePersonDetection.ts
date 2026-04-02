@@ -160,8 +160,9 @@ export function usePersonDetection({ type, url }: UsePersonDetectionProps) {
       lastFpsTimeRef.current = now;
     }
 
-    // Dynamic throttle: IP streams can have higher latency naturally, reducing this threshold from 300ms to 120ms improves frame smoothness
-    const throttleTime = type === 'local' ? 100 : 150; 
+    // Crowd detection models are heavy. Running them every 100ms on 4+ cameras will severely lag the UI thread.
+    // Increasing throttle to 400ms (~2.5 FPS per camera) drastically improves rendering smoothness.
+    const throttleTime = 400; 
     
     if (!detectingRef.current && now - lastDetectTimeRef.current > throttleTime) {
       detectingRef.current = true;
@@ -348,7 +349,8 @@ export function usePersonDetection({ type, url }: UsePersonDetectionProps) {
         const img = mediaRef.current;
         if (img instanceof HTMLImageElement && url) {
            img.crossOrigin = "anonymous";
-           img.src = url;
+           const proxyUrl = `http://localhost:3001/api/proxy-stream?url=${encodeURIComponent(url)}`;
+           img.src = proxyUrl;
            addLog(`IP Camera started: ${url}`, 'info');
         }
       }
